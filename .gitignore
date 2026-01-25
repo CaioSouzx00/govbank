@@ -1,0 +1,19 @@
+# Logs
+logs/
+*.log
+
+# Java
+api/target/
+*.class
+
+# Env
+.env
+
+# Docker
+docker/data/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
