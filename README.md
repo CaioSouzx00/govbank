@@ -242,3 +242,4 @@ Desenvolvedor Backend | Arquitetura de Sistemas | Bancos de Dados
 ---
 
 > "Sistemas críticos não falham. Eles explicam cada decisão que tomam."
+
