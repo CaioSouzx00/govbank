@@ -10,7 +10,7 @@ api/target/
 .env
 
 # Docker
-docker/data/
+docker/postgres/data/
 
 # VS Code
 .vscode/
