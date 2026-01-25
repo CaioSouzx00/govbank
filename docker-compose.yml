@@ -1,0 +1,265 @@
+# ============================================================================
+# GOVBANK CORE - DOCKER COMPOSE (ORQUESTRAÇÃO COMPLETA)
+# Versão: 1.0.0
+# Sobe toda a infraestrutura: PostgreSQL + API + COBOL
+# ============================================================================
+
+version: '3.9'
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  govbank-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  cobol-data:
+    driver: local
+  api-logs:
+    driver: local
+  cobol-logs:
+    driver: local
+
+# ============================================================================
+# SERVICES
+# ============================================================================
+services:
+  
+  # ==========================================================================
+  # POSTGRESQL DATABASE
+  # ==========================================================================
+  postgres:
+    container_name: govbank-postgres
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    image: govbank/postgres:16-custom
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: ${DB_NAME:-govbank_core}
+      POSTGRES_USER: ${DB_USER:-govbank_app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-GovBank@2026!}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: America/Sao_Paulo
+    
+    ports:
+      - "5432:5432"
+    
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/govbank_core.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seeds:/docker-entrypoint-initdb.d/seeds:ro
+      - ./logs/postgres:/var/log/postgresql
+    
+    networks:
+      govbank-network:
+        ipv4_address: 172.28.0.10
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-govbank_app} -d ${DB_NAME:-govbank_core}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c log_timezone='America/Sao_Paulo'
+      -c timezone='America/Sao_Paulo'
+      -c log_statement='mod'
+      -c log_duration=on
+      -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+  
+  # ==========================================================================
+  # COBOL PROCESSING ENGINE
+  # ==========================================================================
+  cobol:
+    container_name: govbank-cobol
+    build:
+      context: ./docker/cobol
+      dockerfile: Dockerfile
+    image: govbank/cobol:3.2
+    restart: unless-stopped
+    
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-govbank_core}
+      DB_USER: ${DB_USER:-govbank_app}
+      DB_PASSWORD: ${DB_PASSWORD:-GovBank@2026!}
+      COBOL_DATA_PATH: /app/data
+      COBOL_LOG_LEVEL: INFO
+      TZ: America/Sao_Paulo
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    volumes:
+      - ./core/src:/app/src:ro
+      - ./core/copybooks:/app/copybooks:ro
+      - ./core/bin:/app/bin
+      - cobol-data:/app/data
+      - cobol-logs:/app/logs
+      - ./logs/cobol:/var/log/cobol
+    
+    networks:
+      govbank-network:
+        ipv4_address: 172.28.0.20
+    
+    # Modo daemon: executa processamento contínuo
+    command: ["/app/scripts/cobol-daemon.sh"]
+    
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep -v grep | grep GBKVAL01 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+  
+  # ==========================================================================
+  # JAVA API (SPRING BOOT)
+  # ==========================================================================
+  api:
+    container_name: govbank-api
+    build:
+      context: ./api
+      dockerfile: ../docker/api/Dockerfile
+    image: govbank/api:1.0.0
+    restart: unless-stopped
+    
+    environment:
+      SPRING_PROFILES_ACTIVE: ${API_PROFILE:-docker}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-govbank_core}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-govbank_app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-GovBank@2026!}
+      SERVER_PORT: 8080
+      COBOL_DATA_PATH: /app/cobol-data
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      TZ: America/Sao_Paulo
+      JAVA_OPTS: >
+        -Xms512m
+        -Xmx1024m
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -XX:+HeapDumpOnOutOfMemoryError
+        -XX:HeapDumpPath=/app/logs/heapdump.hprof
+    
+    ports:
+      - "8080:8080"
+      - "9090:9090"  # Actuator/Metrics
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cobol:
+        condition: service_started
+    
+    volumes:
+      - api-logs:/app/logs
+      - cobol-data:/app/cobol-data:ro
+      - ./logs/api:/var/log/api
+    
+    networks:
+      govbank-network:
+        ipv4_address: 172.28.0.30
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+  
+  # ==========================================================================
+  # PGADMIN (OPCIONAL - DESENVOLVIMENTO)
+  # Descomente para usar interface gráfica de administração
+  # ==========================================================================
+  # pgadmin:
+  #   container_name: govbank-pgadmin
+  #   image: dpage/pgadmin4:8.2
+  #   restart: unless-stopped
+  #   
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@govbank.local
+  #     PGADMIN_DEFAULT_PASSWORD: admin
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #   
+  #   ports:
+  #     - "5050:80"
+  #   
+  #   depends_on:
+  #     - postgres
+  #   
+  #   networks:
+  #     govbank-network:
+  #       ipv4_address: 172.28.0.40
+  
+  # ==========================================================================
+  # PROMETHEUS (OPCIONAL - MÉTRICAS)
+  # ==========================================================================
+  # prometheus:
+  #   container_name: govbank-prometheus
+  #   image: prom/prometheus:v2.49.1
+  #   restart: unless-stopped
+  #   
+  #   ports:
+  #     - "9091:9090"
+  #   
+  #   volumes:
+  #     - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #   
+  #   networks:
+  #     govbank-network:
+  #       ipv4_address: 172.28.0.50
+  
+  # ==========================================================================
+  # GRAFANA (OPCIONAL - DASHBOARDS)
+  # ==========================================================================
+  # grafana:
+  #   container_name: govbank-grafana
+  #   image: grafana/grafana:10.3.1
+  #   restart: unless-stopped
+  #   
+  #   environment:
+  #     GF_SECURITY_ADMIN_USER: admin
+  #     GF_SECURITY_ADMIN_PASSWORD: admin
+  #   
+  #   ports:
+  #     - "3000:3000"
+  #   
+  #   depends_on:
+  #     - prometheus
+  #   
+  #   networks:
+  #     govbank-network:
+  #       ipv4_address: 172.28.0.60
+
+# ============================================================================
+# END OF DOCKER COMPOSE
+# ============================================================================
