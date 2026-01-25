@@ -539,8 +539,10 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 👤 Autor
 
-**Caio Daniel Souza**
-- GitHub: [@seu-usuario](https://github.com/CaioSouzx00)
+**Seu Nome**
+- LinkedIn: [seu-perfil](https://linkedin.com/in/seu-perfil)
+- GitHub: [@seu-usuario](https://github.com/seu-usuario)
+- Email: seu.email@example.com
 
 ---
 
