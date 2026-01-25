@@ -1,19 +1,70 @@
-# Logs
-logs/
+# ============================================================================
+# GOVBANK CORE - GIT IGNORE
+# ============================================================================
+
+# ===== JAVA/MAVEN =====
+target/
+*.class
+*.jar
+*.war
+.mvn/
+mvnw
+mvnw.cmd
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+
+# ===== COBOL =====
+core/bin/
+core/data/output/
+*.exe
+*.so
+*.o
+
+# ===== LOGS =====
+logs/*.log
+logs/api/*.log
+logs/cobol/*.log
+logs/postgres/*.log
 *.log
 
-# Java
-api/target/
-*.class
-
-# Env
-.env
-
-# Docker
+# ===== DOCKER =====
 docker/postgres/data/
+docker/postgres/data/*
+!docker/postgres/data/.gitkeep
 
-# VS Code
-.vscode/
+# ===== ENVIRONMENT =====
+.env
+.env.local
+.env.*.local
+application-local.yml
 
-# OS
+# ===== DATABASE =====
+database/govbank_core_fixed.sql
+*.dump
+*.sql.backup
+
+# ===== OS =====
 .DS_Store
+Thumbs.db
+*.swp
+*.bak
+*~
+
+# ===== SENSITIVE DATA =====
+*.key
+*.pem
+*.p12
+secrets/
+credentials/
+
+# ===== BUILD ARTIFACTS =====
+dist/
+build/
+*.egg-info/
+__pycache__/
