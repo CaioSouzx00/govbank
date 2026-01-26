@@ -21,9 +21,9 @@
            DISPLAY ' '.
            
       * Teste 1: Validar CPF valido
-           DISPLAY 'Teste 1: Validar CPF 12345678909'.
+           DISPLAY 'Teste 1: Validar CPF 11144477735 (valido)'.
            MOVE 'VALIDA-CPF' TO WS-FUNCTION.
-           MOVE '12345678909' TO WS-INPUT.
+           MOVE '11144477735' TO WS-INPUT.
            CALL 'GBKUTIL1' USING WS-FUNCTION
                                  WS-INPUT
                                  WS-OUTPUT
@@ -33,9 +33,9 @@
            DISPLAY ' '.
            
       * Teste 2: Validar CPF invalido
-           DISPLAY 'Teste 2: Validar CPF 11111111111'.
+           DISPLAY 'Teste 2: Validar CPF 12345678901 (invalido)'.
            MOVE 'VALIDA-CPF' TO WS-FUNCTION.
-           MOVE '11111111111' TO WS-INPUT.
+           MOVE '12345678901' TO WS-INPUT.
            CALL 'GBKUTIL1' USING WS-FUNCTION
                                  WS-INPUT
                                  WS-OUTPUT
