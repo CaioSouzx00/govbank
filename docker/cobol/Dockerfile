@@ -23,8 +23,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # ============================================================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Compilador GnuCOBOL
-    gnucobol3 \
-    gnucobol3-dev \
+    gnucobol \
     # Bibliotecas necessárias
     libgmp-dev \
     libncurses-dev \

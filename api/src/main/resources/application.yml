@@ -8,7 +8,7 @@ spring:
   
   # Database
   datasource:
-    url: jdbc:postgresql://localhost:5433/govbank_core
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:govbank_core}
     username: govbank_app
     password: GovBank@2026!
     driver-class-name: org.postgresql.Driver

@@ -68,4 +68,29 @@ public class CidadaoService {
                 .status(cidadao.getStatus().name())
                 .build();
     }
+
+    @Transactional
+    public CidadaoDTO atualizar(String cpf, CidadaoDTO dto) {
+        log.info("Atualizando cidadão com CPF: {}", cpf);
+
+        Cidadao cidadao = cidadaoRepository.findById(cpf)
+                .orElseThrow(() -> new ResourceNotFoundException("Cidadão não encontrado com CPF: " + cpf));
+
+        cidadao.setNome(dto.getNome());
+        cidadao.setDataNascimento(dto.getDataNascimento());
+        cidadao.setRendaFamiliar(dto.getRendaFamiliar());
+
+        if (dto.getStatus() != null) {
+            try {
+                cidadao.setStatus(Cidadao.StatusCidadao.valueOf(dto.getStatus()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Status inválido: " + dto.getStatus());
+            }
+        }
+        cidadao = cidadaoRepository.save(cidadao);
+        log.info("Cidadão atualizado com sucesso: {}", cidadao.getCpf());
+
+        return toDTO(cidadao);
+    }
+
 }
