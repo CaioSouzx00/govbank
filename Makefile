@@ -32,28 +32,28 @@ db-reset: ## Reseta o banco (CUIDADO: apaga tudo!)
 	docker compose -f docker/postgres/docker-compose.yml exec postgres psql -U govbank_app -d govbank_core -f /docker-entrypoint-initdb.d/01-schema.sql
 
 build-api: ## Compila a API Java
-	cd api && mvn clean package -DskipTests
+	cd apps/api && mvn clean package -DskipTests
 
 build-cobol: ## Compila os programas COBOL
-	cd core && ./compile.sh
+	cd apps/cobol && ./compile.sh
 
 build-all: build-api build-cobol ## Compila tudo
 
 run-api: ## Executa a API localmente
-	cd api && mvn spring-boot:run
+	cd apps/api && mvn spring-boot:run
 
 run-cobol: ## Executa programa COBOL específico (use PROG=nome)
-	cd core/bin && ./$(PROG)
+	cd apps/cobol/bin && ./$(PROG)
 
 test-api: ## Roda testes da API
-	cd api && mvn test
+	cd apps/api && mvn test
 
 test-integration: ## Roda testes de integração
 	./scripts/test/run-integration-tests.sh
 
 clean: ## Limpa builds
-	cd api && mvn clean || true
-	rm -rf core/bin/* || true
+	cd apps/api && mvn clean || true
+	rm -rf apps/cobol/bin/* || true
 	rm -rf logs/*.log || true
 
 # ============================================================================

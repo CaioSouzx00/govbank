@@ -118,9 +118,9 @@ services:
         condition: service_healthy
     
     volumes:
-      - ./core/src:/app/src:ro
-      - ./core/copybooks:/app/copybooks:ro
-      - ./core/bin:/app/bin
+      - ./apps/cobol/src:/app/src:ro
+      - ./apps/cobol/copybooks:/app/copybooks:ro
+      - ./apps/cobol/bin:/app/bin
       - cobol-data:/app/data
       - cobol-logs:/app/logs
       - ./logs/cobol:/var/log/cobol
@@ -145,8 +145,8 @@ services:
   api:
     container_name: govbank-api
     build:
-      context: ./api
-      dockerfile: ../docker/api/Dockerfile
+      context: ./apps/api
+      dockerfile: ../../docker/api/Dockerfile
     image: govbank/api:1.0.0
     restart: unless-stopped
     
