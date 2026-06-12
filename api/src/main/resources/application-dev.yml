@@ -1,0 +1,19 @@
+# ============================================================================
+# GOVBANK CORE API - PROFILE DE DESENVOLVIMENTO
+# ============================================================================
+
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+logging:
+  level:
+    com.govbank.api: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
