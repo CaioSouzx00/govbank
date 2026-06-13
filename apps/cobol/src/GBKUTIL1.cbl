@@ -1,5 +1,7 @@
        IDENTIFICATION DIVISION.
        PROGRAM-ID. GBKUTIL1.
+       AUTHOR. GovBank Core Team.
+       DATE-WRITTEN. 2026-06-12.
        
        DATA DIVISION.
        WORKING-STORAGE SECTION.
@@ -17,6 +19,35 @@
        
        01  WS-TEMP-VARS.
            05  WS-TEMP-NUM            PIC 9(4).
+       
+       01  WS-DATE-TIME.
+           05  WS-CURRENT-DATE        PIC 9(8).
+           05  WS-CURRENT-TIME        PIC 9(8).
+           05  WS-FORMATTED-DATE       PIC X(10).
+           05  WS-FORMATTED-TIME      PIC X(8).
+           05  WS-TIMESTAMP           PIC X(26).
+       
+       01  WS-HASH-WORK.
+           05  WS-HASH-INPUT          PIC X(500).
+           05  WS-HASH-LENGTH        PIC 9(3) VALUE ZERO.
+           05  WS-HASH-SUM           PIC 9(10) VALUE ZERO.
+           05  WS-HASH-RESULT        PIC X(64).
+       
+       01  WS-BENEFICIO-CALC.
+           05  WS-RENDA-FAMILIAR      PIC 9(8)V99.
+           05  WS-VALOR-BASE          PIC 9(8)V99.
+           05  WS-RENDA-MAX           PIC 9(8)V99.
+           05  WS-FACTOR-ADJUST       PIC 9(3)V99 VALUE 1.00.
+           05  WS-VALOR-CALCULADO     PIC 9(8)V99.
+           05  WS-ELEGIVEL            PIC X VALUE 'N'.
+       
+       01  WS-PAGAMENTO-WORK.
+           05  WS-AGENCIA             PIC X(4).
+           05  WS-CONTA               PIC X(15).
+           05  WS-COD-BANCO           PIC X(3).
+           05  WS-VALOR               PIC 9(13)V99.
+           05  WS-LINHA-REMESSA       PIC X(400).
+           05  WS-SEQUENCIAL          PIC 9(6) VALUE ZERO.
        
        LINKAGE SECTION.
        01  LK-FUNCTION-CODE           PIC X(10).
@@ -37,8 +68,13 @@
                WHEN 'VALIDA-CPF'
                    PERFORM VALIDAR-CPF-PROC
                WHEN 'GET-DATE'
-                   MOVE 'Funcao GET-DATE nao implementada' 
-                       TO LK-OUTPUT-DATA
+                   PERFORM GET-DATE-PROC
+               WHEN 'CALC-HASH'
+                   PERFORM CALC-HASH-PROC
+               WHEN 'CALC-BENEF'
+                   PERFORM CALC-BENEFICIO-PROC
+               WHEN 'GERA-REMESSA'
+                   PERFORM GERAR-REMESSA-PROC
                WHEN OTHER
                    MOVE WS-RC-INVALID-DATA TO LK-RETURN-CODE
                    MOVE 'FUNCAO INVALIDA' TO LK-OUTPUT-DATA
@@ -125,6 +161,112 @@
            END-IF.
        
        VALIDAR-CPF-END.
+           EXIT.
+       
+       GET-DATE-PROC.
+           ACCEPT WS-CURRENT-DATE FROM DATE YYYYMMDD.
+           ACCEPT WS-CURRENT-TIME FROM TIME.
+           
+           STRING WS-CURRENT-DATE(1:4) DELIMITED BY SIZE
+                  '-' DELIMITED BY SIZE
+                  WS-CURRENT-DATE(5:2) DELIMITED BY SIZE
+                  '-' DELIMITED BY SIZE
+                  WS-CURRENT-DATE(7:2) DELIMITED BY SIZE
+                  INTO WS-FORMATTED-DATE
+           END-STRING.
+           
+           STRING WS-CURRENT-TIME(1:2) DELIMITED BY SIZE
+                  ':' DELIMITED BY SIZE
+                  WS-CURRENT-TIME(3:2) DELIMITED BY SIZE
+                  ':' DELIMITED BY SIZE
+                  WS-CURRENT-TIME(5:2) DELIMITED BY SIZE
+                  INTO WS-FORMATTED-TIME
+           END-STRING.
+           
+           STRING WS-FORMATTED-DATE DELIMITED BY SPACE
+                  ' ' DELIMITED BY SIZE
+                  WS-FORMATTED-TIME DELIMITED BY SPACE
+                  INTO WS-TIMESTAMP
+           END-STRING.
+           
+           MOVE WS-TIMESTAMP TO LK-OUTPUT-DATA.
+           MOVE WS-RC-SUCCESS TO LK-RETURN-CODE.
+       
+       GET-DATE-END.
+           EXIT.
+       
+       CALC-HASH-PROC.
+           MOVE LK-INPUT-DATA TO WS-HASH-INPUT.
+           MOVE ZEROS TO WS-HASH-SUM.
+           MOVE SPACES TO WS-HASH-RESULT.
+           
+           PERFORM VARYING WS-HASH-LENGTH FROM 1 BY 1 
+                   UNTIL WS-HASH-LENGTH > LENGTH OF WS-HASH-INPUT
+                   OR WS-HASH-INPUT(WS-HASH-LENGTH:1) = SPACE
+               COMPUTE WS-HASH-SUM = WS-HASH-SUM + 
+                   FUNCTION ORD(WS-HASH-INPUT(WS-HASH-LENGTH:1))
+           END-PERFORM.
+           
+           MOVE WS-HASH-SUM TO WS-HASH-RESULT(1:10).
+           MOVE 'HASH-' TO WS-HASH-RESULT(1:5).
+           MOVE WS-HASH-SUM TO WS-HASH-RESULT(6:10).
+           MOVE WS-HASH-RESULT TO LK-OUTPUT-DATA.
+           MOVE WS-RC-SUCCESS TO LK-RETURN-CODE.
+       
+       CALC-HASH-END.
+           EXIT.
+       
+       CALC-BENEFICIO-PROC.
+           UNSTRING LK-INPUT-DATA DELIMITED BY ','
+               INTO WS-RENDA-FAMILIAR, WS-VALOR-BASE, WS-RENDA-MAX
+           END-UNSTRING.
+           
+           IF WS-RENDA-MAX > 0 AND WS-RENDA-FAMILIAR > WS-RENDA-MAX
+               MOVE 'N' TO WS-ELEGIVEL
+               MOVE ZEROS TO WS-VALOR-CALCULADO
+           ELSE
+               MOVE 'S' TO WS-ELEGIVEL
+               IF WS-RENDA-FAMILIAR > 0
+                   COMPUTE WS-FACTOR-ADJUST = 1.00 - 
+                       (WS-RENDA-FAMILIAR / (WS-RENDA-MAX * 2))
+               END-IF
+               IF WS-FACTOR-ADJUST < 0.50
+                   MOVE 0.50 TO WS-FACTOR-ADJUST
+               END-IF
+               COMPUTE WS-VALOR-CALCULADO = WS-VALOR-BASE * WS-FACTOR-ADJUST
+           END-IF.
+           
+           STRING WS-ELEGIVEL DELIMITED BY SIZE
+                  ',' DELIMITED BY SIZE
+                  WS-VALOR-CALCULADO DELIMITED BY SIZE
+                  INTO LK-OUTPUT-DATA
+           END-STRING.
+           
+           MOVE WS-RC-SUCCESS TO LK-RETURN-CODE.
+       
+       CALC-BENEFICIO-END.
+           EXIT.
+       
+       GERAR-REMESSA-PROC.
+           UNSTRING LK-INPUT-DATA DELIMITED BY ','
+               INTO WS-AGENCIA, WS-CONTA, WS-COD-BANCO, WS-VALOR
+           END-UNSTRING.
+           
+           ADD 1 TO WS-SEQUENCIAL.
+           
+           STRING '001REMESSA' DELIMITED BY SIZE
+                  WS-COD-BANCO DELIMITED BY SIZE
+                  WS-AGENCIA DELIMITED BY SIZE
+                  WS-CONTA DELIMITED BY SIZE
+                  WS-VALOR DELIMITED BY SIZE
+                  WS-SEQUENCIAL DELIMITED BY SIZE
+                  INTO WS-LINHA-REMESSA
+           END-STRING.
+           
+           MOVE WS-LINHA-REMESSA TO LK-OUTPUT-DATA.
+           MOVE WS-RC-SUCCESS TO LK-RETURN-CODE.
+       
+       GERAR-REMESSA-END.
            EXIT.
        
        END PROGRAM GBKUTIL1.

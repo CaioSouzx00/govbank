@@ -308,14 +308,14 @@ WHERE t.status IN ('PENDENTE', 'PROCESSANDO');
 -- ============================================================================
 
 -- Usuário para a aplicação Java
-CREATE USER govbank_app WITH PASSWORD 'GovBank@2026!';
+CREATE USER govbank_app WITH PASSWORD '${DB_PASSWORD:-CHANGE_THIS_PASSWORD_IN_PRODUCTION}';
 GRANT CONNECT ON DATABASE govbank_core TO govbank_app;
 GRANT USAGE ON SCHEMA public TO govbank_app;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO govbank_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO govbank_app;
 
 -- Usuário READ-ONLY para auditoria/relatórios
-CREATE USER govbank_audit WITH PASSWORD 'Audit@2026!';
+CREATE USER govbank_audit WITH PASSWORD '${DB_AUDIT_PASSWORD:-CHANGE_THIS_PASSWORD_IN_PRODUCTION}';
 GRANT CONNECT ON DATABASE govbank_core TO govbank_audit;
 GRANT USAGE ON SCHEMA public TO govbank_audit;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO govbank_audit;

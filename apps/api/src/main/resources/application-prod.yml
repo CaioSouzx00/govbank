@@ -12,6 +12,16 @@ spring:
 
 logging:
   level:
+    root: WARN
     com.govbank.api: INFO
+    org.springframework.web: WARN
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.security: WARN
+
+# Security: Disable Swagger in production
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

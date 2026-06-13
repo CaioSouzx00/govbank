@@ -46,7 +46,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-govbank_core}
       POSTGRES_USER: ${DB_USER:-govbank_app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-GovBank@2026!}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_THIS_PASSWORD_IN_PRODUCTION}
       PGDATA: /var/lib/postgresql/data/pgdata
       TZ: America/Sao_Paulo
     
@@ -108,7 +108,7 @@ services:
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-govbank_core}
       DB_USER: ${DB_USER:-govbank_app}
-      DB_PASSWORD: ${DB_PASSWORD:-GovBank@2026!}
+      DB_PASSWORD: ${DB_PASSWORD:-CHANGE_THIS_PASSWORD_IN_PRODUCTION}
       COBOL_DATA_PATH: /app/data
       COBOL_LOG_LEVEL: INFO
       TZ: America/Sao_Paulo
@@ -154,10 +154,10 @@ services:
       SPRING_PROFILES_ACTIVE: ${API_PROFILE:-docker}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-govbank_core}
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-govbank_app}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-GovBank@2026!}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-CHANGE_THIS_PASSWORD_IN_PRODUCTION}
       SERVER_PORT: 8080
       COBOL_DATA_PATH: /app/cobol-data
-      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_SECRET_KEY_MIN_32_CHARS_IN_PRODUCTION}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       TZ: America/Sao_Paulo
       JAVA_OPTS: >

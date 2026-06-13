@@ -18,15 +18,19 @@ public class CidadaoDTO {
     private String cpf;
 
     @NotBlank(message = "Nome é obrigatório")
-    @Size(max = 200, message = "Nome deve ter no máximo 200 caracteres")
+    @Size(min = 3, max = 200, message = "Nome deve ter entre 3 e 200 caracteres")
+    @Pattern(regexp = "^[a-zA-ZÀ-ÿ\\s]+$", message = "Nome deve conter apenas letras")
     private String nome;
 
     @NotNull(message = "Data de nascimento é obrigatória")
+    @Past(message = "Data de nascimento deve ser no passado")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dataNascimento;
 
     @DecimalMin(value = "0.0", message = "Renda familiar não pode ser negativa")
+    @DecimalMax(value = "999999999.99", message = "Renda familiar excede valor máximo")
     private BigDecimal rendaFamiliar;
 
+    @Pattern(regexp = "ATIVO|BLOQUEADO|SUSPEITO|INATIVO", message = "Status inválido")
     private String status;
 }
